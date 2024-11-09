@@ -1,5 +1,6 @@
 ﻿using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,35 @@ namespace APICatalogo.Controllers;
 public class CategoriasController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _configuration;
 
-    public CategoriasController(AppDbContext context)
+    public CategoriasController(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
+    }
+
+    [HttpGet("LerArquivoConfiguracao")]
+    public string GetValores()
+    {
+        var valor1 = _configuration["chave1"];
+        var valor2 = _configuration["chave2"];
+
+        var secao1 = _configuration["secao1:chave2"];
+
+        return $"Chave1 = {valor1} \nChave2 = {valor2} \nSecao1 => Chave2 = {secao1}";
+    }
+
+    [HttpGet("UsandoFromServices/{nome}")]
+    public ActionResult<string> GetSaudacaoFromServices([FromServices] IMeuServico meuServico, string nome)
+    {
+        return meuServico.Saudacao(nome);
+    }
+
+    [HttpGet("SemUsarFromServices/{nome}")]
+    public ActionResult<string> GetSaudacaoSemFromServices(IMeuServico meuServico, string nome)
+    {
+        return meuServico.Saudacao(nome);
     }
 
     [HttpGet("produtos")]
@@ -41,24 +67,44 @@ public class CategoriasController : ControllerBase
     [HttpGet("{id:int}", Name = "ObterCategoria")]
     public ActionResult<Categoria> Get(int id)
     {
-        try
-        {
-            var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+        throw new Exception("Excecao ao retornar a categoria pelo Id");
+        //string[] teste = null;
+        //if (teste.Length > 0)
+        //{
 
-            if (categoria == null)
-            {
-                return NotFound($"Categoria com id= {id} nao encontrada...");
-            }
+        //}
 
-            return Ok(categoria);
-        }
-        catch (Exception)
+        var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+
+        if (categoria == null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                "Ocorreu um problema ao tratar a sua solicitacao");
+            return NotFound($"Categoria com id= {id} nao encontrada...");
         }
-        
+
+        return Ok(categoria);
     }
+
+    //[HttpGet("{id:int}", Name = "ObterCategoria")]
+    //public ActionResult<Categoria> Get(int id)
+    //{
+    //    try
+    //    {
+    //        var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+
+    //        if (categoria == null)
+    //        {
+    //            return NotFound($"Categoria com id= {id} nao encontrada...");
+    //        }
+
+    //        return Ok(categoria);
+    //    }
+    //    catch (Exception)
+    //    {
+    //        return StatusCode(StatusCodes.Status500InternalServerError,
+    //            "Ocorreu um problema ao tratar a sua solicitacao");
+    //    }
+        
+    //}
 
     [HttpPost]
     public ActionResult Post(Categoria categoria)

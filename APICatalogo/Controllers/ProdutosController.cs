@@ -2,10 +2,11 @@
 using APICatalogo.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace APICatalogo.Controllers;
 
-[Route("[controller]")]
+[Route("api/[controller]")]
 [ApiController]
 public class ProdutosController : ControllerBase
 {
@@ -16,23 +17,50 @@ public class ProdutosController : ControllerBase
         _context = context;
     }
 
+    //[HttpGet("/primeiro")]
+    //public ActionResult<Produto> GetPrimeiro()
+    //{
+    //    var produto = _context.Produtos.FirstOrDefault();
+
+    //    if (produto == null)
+    //    {
+    //        return NotFound("Produtos nao encontrados...");
+    //    }
+
+    //    return produto;
+    //}
+
+    //[HttpGet("{valor:alpha:length(5)}")]
+    //public ActionResult<Produto> Get2(string valor)
+    //{
+    //    var teste = valor;
+    //    return _context.Produtos.FirstOrDefault();
+    //}
+
+    //[HttpGet]
+    //public ActionResult<Produto> Get()
+    //{
+    //    var produto = _context.Produtos.FirstOrDefault();
+
+    //    if (produto == null)
+    //    {
+    //        return NotFound("Produtos nao encontrados...");
+    //    }
+
+    //    return produto;
+    //}
+
     [HttpGet]
-    public ActionResult<IEnumerable<Produto>> Get()
+    public async Task<ActionResult<IEnumerable<Produto>>> Get2()
     {
-        var produtos = _context.Produtos?.ToList();
-
-        if(produtos == null)
-        {
-            return NotFound("Produtos nao encontrados...");
-        }
-
-        return produtos;
+        return  await _context.Produtos.AsNoTracking().ToListAsync();
     }
 
-    [HttpGet("{id:int}", Name="ObterProduto")]
-    public ActionResult<Produto> GetProduto(int id)
+    [HttpGet("{id}", Name="ObterProduto")]
+    public async Task<ActionResult<Produto>> Get(int id)
     {
-        var produto = _context.Produtos?.FirstOrDefault(p => p.ProdutoId == id);
+        var produto = await _context.Produtos
+            .FirstOrDefaultAsync(p => p.ProdutoId == id);
 
         if(produto == null)
         {
@@ -45,9 +73,15 @@ public class ProdutosController : ControllerBase
     [HttpPost]
     public ActionResult Post(Produto produto)
     {
-        if (produto == null) {
+        if (produto == null)
+        {
             return BadRequest();
         }
+
+        //if (!ModelState.IsValid)
+        //{
+        //    return BadRequest(ModelState);
+        //}
 
         _context.Produtos?.Add(produto);
         _context.SaveChanges();
