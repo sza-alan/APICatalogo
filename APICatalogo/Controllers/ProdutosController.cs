@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace APICatalogo.Controllers;
 
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 public class ProdutosController : ControllerBase
 {
