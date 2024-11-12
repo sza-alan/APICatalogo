@@ -37,6 +37,7 @@ builder.Services.AddTransient<IMeuServico, MeuServico>();
 
 builder.Services.AddScoped<ApiLoggingFilter>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
