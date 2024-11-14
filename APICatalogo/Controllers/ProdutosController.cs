@@ -35,7 +35,7 @@ public class ProdutosController : ControllerBase
     [HttpGet]
     public ActionResult<IEnumerable<ProdutoDTO>> Get()
     {
-        var produtos = _unitOfWork.CategoriaRepository.GetAll();
+        var produtos = _unitOfWork.ProdutoRepository.GetAll();
 
         if (produtos is null)
         {
