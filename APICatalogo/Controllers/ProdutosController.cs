@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace APICatalogo.Controllers;
@@ -23,7 +24,7 @@ public class ProdutosController : ControllerBase
     public ActionResult<IEnumerable<ProdutoDTO>> GetProdutosCategoria(int id)
     {
         var produtos = _unitOfWork.ProdutoRepository.GetProdutosPorCategoria(id);
-        
+
         if (produtos is null)
             return NotFound();
 
@@ -47,12 +48,12 @@ public class ProdutosController : ControllerBase
         return Ok(produtosDto);
     }
 
-    [HttpGet("{id}", Name="ObterProduto")]
+    [HttpGet("{id}", Name = "ObterProduto")]
     public ActionResult<ProdutoDTO> Get(int id)
     {
         var produto = _unitOfWork.ProdutoRepository.Get(p => p.ProdutoId == id);
 
-        if(produto == null)
+        if (produto == null)
         {
             return NotFound("Produto nao encontrado...");
         }
@@ -77,6 +78,33 @@ public class ProdutosController : ControllerBase
 
         return new CreatedAtRouteResult("ObterProduto",
             new { id = novoProdutoDto.ProdutoId }, novoProdutoDto);
+    }
+
+    [HttpPatch("{id}/UpdatePartial")]
+    public ActionResult<ProdutoDTOUpdateResponse> Patch(int id, 
+        JsonPatchDocument<ProdutoDTOUpdateRequest> patchProdutoDTO)
+    {
+        if (patchProdutoDTO == null || id <= 0)
+            return BadRequest();
+
+        var produto = _unitOfWork.ProdutoRepository.Get(p => p.ProdutoId == id);
+
+        if (produto == null)
+            return NotFound();
+
+        var produtoUpdateRequest = _mapper.Map<ProdutoDTOUpdateRequest>(produto);
+
+        patchProdutoDTO.ApplyTo(produtoUpdateRequest, ModelState);
+
+        if (!ModelState.IsValid || !TryValidateModel(produtoUpdateRequest))
+            return BadRequest(ModelState);
+
+        _mapper.Map(produtoUpdateRequest, produto);
+
+        _unitOfWork.ProdutoRepository.Update(produto);
+        _unitOfWork.Commit();
+
+        return Ok(_mapper.Map<ProdutoDTOUpdateResponse>(produto));
     }
 
     [HttpPut("{id:int}")]
