@@ -38,22 +38,15 @@ public class CategoriasController : ControllerBase
     public ActionResult<IEnumerable<CategoriaDTO>> Get([FromQuery] CategoriasParameters categoriasParameters)
     {
         var categorias = _unitOfWork.CategoriaRepository.GetCategorias(categoriasParameters);
+        return ObterCategorias(categorias);
+    }
 
-        var metadata = new
-        {
-            categorias.TotalCount,
-            categorias.PageSize,
-            categorias.CurrentPage,
-            categorias.TotalPages,
-            categorias.HasNext,
-            categorias.HasPrevious
-        };
+    [HttpGet("filter/nome/pagination")]
+    public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasFiltradas([FromQuery] CategoriasFiltroNome categoriasFiltro)
+    {
+        var categoriasFiltradas = _unitOfWork.CategoriaRepository.GetCategoriasFiltroNome(categoriasFiltro);
 
-        Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
-
-        var categoriasDto = categorias.ToCategoriaDTOList();
-
-        return Ok(categoriasDto);
+        return ObterCategorias(categoriasFiltradas);
     }
 
     [HttpGet("{id:int}", Name = "ObterCategoria")]
@@ -127,5 +120,22 @@ public class CategoriasController : ControllerBase
         var categoriaExcluidaDto = categoriaExcluida.ToCategoriaDto();
 
         return Ok(categoriaExcluidaDto);
+    }
+
+    private ActionResult<IEnumerable<CategoriaDTO>> ObterCategorias(PagedList<Categoria> categorias)
+    {
+        var metadata = new
+        {
+            categorias.TotalCount,
+            categorias.PageSize,
+            categorias.CurrentPage,
+            categorias.TotalPages,
+            categorias.HasNext,
+            categorias.HasPrevious
+        };
+
+        Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+        var categoriasDto = categorias.ToCategoriaDTOList();
+        return Ok(categoriasDto);
     }
 }
