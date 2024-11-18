@@ -11,23 +11,26 @@ public class CategoriaRepository : Repository<Categoria>, ICategoriaRepository
     {
     }
 
-    public PagedList<Categoria> GetCategorias(CategoriasParameters categoriasParams)
+    public async Task<PagedList<Categoria>> GetCategoriasAsync(CategoriasParameters categoriasParams)
     {
-        var categorias = GetAll().OrderBy(c => c.CategoriaId).AsQueryable();
-        var produtosOrdenados = PagedList<Categoria>.ToPagedList(categorias, categoriasParams.PageNumber, categoriasParams.PageSize);
+        var categorias = await GetAllAsync();
+
+        var categoriasOrdenadas = categorias.OrderBy(c => c.CategoriaId).AsQueryable();
+
+        var produtosOrdenados = PagedList<Categoria>.ToPagedList(categoriasOrdenadas, categoriasParams.PageNumber, categoriasParams.PageSize);
         return produtosOrdenados;
     }
 
-    public PagedList<Categoria> GetCategoriasFiltroNome(CategoriasFiltroNome categoriasParams)
+    public async Task<PagedList<Categoria>> GetCategoriasFiltroNomeAsync(CategoriasFiltroNome categoriasParams)
     {
-        var categorias = GetAll().AsQueryable();
+        var categorias = await GetAllAsync();
 
         if (!string.IsNullOrEmpty(categoriasParams.Nome))
         {
             categorias = categorias.Where(c => c.Nome.Contains(categoriasParams.Nome));
         }
 
-        var categoriasFiltradas = PagedList<Categoria>.ToPagedList(categorias,
+        var categoriasFiltradas = PagedList<Categoria>.ToPagedList(categorias.AsQueryable(),
                                                                    categoriasParams.PageNumber,
                                                                    categoriasParams.PageSize);
 
