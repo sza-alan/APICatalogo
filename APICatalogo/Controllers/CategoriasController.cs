@@ -25,9 +25,9 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<CategoriaDTO>> Get()
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get()
     {
-        var categorias = _unitOfWork.CategoriaRepository.GetAll();
+        var categorias = await _unitOfWork.CategoriaRepository.GetAllAsync();
 
         var categoriasDto = categorias.ToCategoriaDTOList();
 
@@ -35,24 +35,24 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpGet("pagination")]
-    public ActionResult<IEnumerable<CategoriaDTO>> Get([FromQuery] CategoriasParameters categoriasParameters)
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get([FromQuery] CategoriasParameters categoriasParameters)
     {
-        var categorias = _unitOfWork.CategoriaRepository.GetCategorias(categoriasParameters);
+        var categorias = await _unitOfWork.CategoriaRepository.GetCategoriasAsync(categoriasParameters);
         return ObterCategorias(categorias);
     }
 
     [HttpGet("filter/nome/pagination")]
-    public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasFiltradas([FromQuery] CategoriasFiltroNome categoriasFiltro)
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetCategoriasFiltradas([FromQuery] CategoriasFiltroNome categoriasFiltro)
     {
-        var categoriasFiltradas = _unitOfWork.CategoriaRepository.GetCategoriasFiltroNome(categoriasFiltro);
+        var categoriasFiltradas = await _unitOfWork.CategoriaRepository.GetCategoriasFiltroNomeAsync(categoriasFiltro);
 
         return ObterCategorias(categoriasFiltradas);
     }
 
     [HttpGet("{id:int}", Name = "ObterCategoria")]
-    public ActionResult<CategoriaDTO> Get(int id)
+    public async Task<ActionResult<CategoriaDTO>> Get(int id)
     {
-        var categoria = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
+        var categoria = await _unitOfWork.CategoriaRepository.GetAsync(c => c.CategoriaId == id);
 
         if (categoria is null)
         {
@@ -66,7 +66,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<CategoriaDTO> Post(CategoriaDTO categoriaDto)
+    public async Task<ActionResult<CategoriaDTO>> Post(CategoriaDTO categoriaDto)
     {
         if (categoriaDto is null)
         {
@@ -77,7 +77,7 @@ public class CategoriasController : ControllerBase
         var categoria = categoriaDto.ToCategoria();
 
         var categoriaCriada = _unitOfWork.CategoriaRepository.Create(categoria);
-        _unitOfWork.Commit();
+        await _unitOfWork.CommitAsync();
 
         var novaCategorioDto = categoriaCriada.ToCategoriaDto();
 
@@ -85,7 +85,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult<CategoriaDTO> Put(int id, CategoriaDTO categoriaDto)
+    public async Task<ActionResult<CategoriaDTO>> Put(int id, CategoriaDTO categoriaDto)
     {
         if (id != categoriaDto.CategoriaId)
         {
@@ -96,7 +96,7 @@ public class CategoriasController : ControllerBase
         var categoria = categoriaDto.ToCategoria();
 
         var categoriaAtualizada = _unitOfWork.CategoriaRepository.Update(categoria);
-        _unitOfWork.Commit();
+        await _unitOfWork.CommitAsync();
 
         var categoriaAtualizadaDto = categoriaAtualizada.ToCategoriaDto();
 
@@ -104,9 +104,9 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public ActionResult<CategoriaDTO> Delete(int id)
+    public async Task<ActionResult<CategoriaDTO>> Delete(int id)
     {
-        var categoria = _unitOfWork.CategoriaRepository.Get(c => c.CategoriaId == id);
+        var categoria = await _unitOfWork.CategoriaRepository.GetAsync(c => c.CategoriaId == id);
 
         if (categoria == null)
         {
@@ -115,7 +115,7 @@ public class CategoriasController : ControllerBase
         }
 
         var categoriaExcluida = _unitOfWork.CategoriaRepository.Delete(categoria);
-        _unitOfWork.Commit();
+        await _unitOfWork.CommitAsync();
 
         var categoriaExcluidaDto = categoriaExcluida.ToCategoriaDto();
 
