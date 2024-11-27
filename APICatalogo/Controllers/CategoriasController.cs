@@ -32,6 +32,9 @@ public class CategoriasController : ControllerBase
     {
         var categorias = await _unitOfWork.CategoriaRepository.GetAllAsync();
 
+        if (categorias is null)
+            return NotFound("Nao existem categorias...");
+
         var categoriasDto = categorias.ToCategoriaDTOList();
 
         return Ok(categoriasDto);
