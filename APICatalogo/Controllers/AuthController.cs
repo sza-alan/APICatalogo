@@ -17,16 +17,19 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(ITokenService tokenService, 
-           UserManager<ApplicationUser> userManager, 
-           RoleManager<IdentityRole> roleManager, 
-           IConfiguration configuration)
+    public AuthController(ITokenService tokenService,
+                          UserManager<ApplicationUser> userManager,
+                          RoleManager<IdentityRole> roleManager,
+                          IConfiguration configuration,
+                          ILogger<AuthController> logger)
     {
         _tokenService = tokenService;
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -43,7 +46,7 @@ public class AuthController : ControllerBase
             {
                 new Claim(ClaimTypes.Name, user.UserName!),
                 new Claim(ClaimTypes.Email, user.Email!),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
             foreach (var userRole in userRoles)
@@ -51,15 +54,18 @@ public class AuthController : ControllerBase
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
 
-            var token = _tokenService.GenerateAccessToken(authClaims, _configuration);
+            var token = _tokenService.GenerateAccessToken(authClaims,
+                                                         _configuration);
 
             var refreshToken = _tokenService.GenerateRefreshToken();
 
-            _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInMinutes"], out int refreshTokenValidityInMinutes);
+            _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInMinutes"],
+                               out int refreshTokenValidityInMinutes);
+
+            user.RefreshTokenExpiryTime =
+                            DateTime.Now.AddMinutes(refreshTokenValidityInMinutes);
 
             user.RefreshToken = refreshToken;
-
-            user.RefreshTokenExpiryTime = DateTime.Now.AddMinutes(refreshTokenValidityInMinutes);
 
             await _userManager.UpdateAsync(user);
 
@@ -70,7 +76,6 @@ public class AuthController : ControllerBase
                 Expiration = token.ValidTo
             });
         }
-
         return Unauthorized();
     }
 
@@ -83,14 +88,14 @@ public class AuthController : ControllerBase
         if (userExists != null)
         {
             return StatusCode(StatusCodes.Status500InternalServerError,
-                    new Response { Status = "Error", Message = "User already exists!" });
+                   new Response { Status = "Error", Message = "User already exists!" });
         }
 
         ApplicationUser user = new()
         {
             Email = model.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
-            UserName = model.UserName,
+            UserName = model.UserName
         };
 
         var result = await _userManager.CreateAsync(user, model.Password!);
@@ -98,28 +103,30 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             return StatusCode(StatusCodes.Status500InternalServerError,
-                    new Response { Status = "Error", Message = "User creation failed."});
+                   new Response { Status = "Error", Message = "User creation failed." });
         }
 
-        return Ok(new Response { Status = "Sucess", Message = "User created successfully!" });
+        return Ok(new Response { Status = "Success", Message = "User created successfully!" });
+
     }
 
     [HttpPost]
     [Route("refresh-token")]
     public async Task<IActionResult> RefreshToken(TokenModel tokenModel)
     {
-        if (tokenModel == null)
+
+        if (tokenModel is null)
         {
             return BadRequest("Invalid client request");
         }
 
-        string? acessToken = tokenModel.AccessToken
-                                ?? throw new ArgumentNullException(nameof(tokenModel));
+        string? accessToken = tokenModel.AccessToken
+                              ?? throw new ArgumentNullException(nameof(tokenModel));
 
         string? refreshToken = tokenModel.RefreshToken
-                                ?? throw new ArgumentNullException(nameof(tokenModel));
+                               ?? throw new ArgumentException(nameof(tokenModel));
 
-        var principal = _tokenService.GetPrincipalFromExpiredToken(acessToken!, _configuration);
+        var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken!, _configuration);
 
         if (principal == null)
         {
@@ -130,16 +137,19 @@ public class AuthController : ControllerBase
 
         var user = await _userManager.FindByNameAsync(username!);
 
-        if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+        if (user == null || user.RefreshToken != refreshToken
+                         || user.RefreshTokenExpiryTime <= DateTime.Now)
         {
             return BadRequest("Invalid access token/refresh token");
         }
 
-        var newAccessToken = _tokenService.GenerateAccessToken(principal.Claims.ToList(), _configuration);
+        var newAccessToken = _tokenService.GenerateAccessToken(
+                                           principal.Claims.ToList(), _configuration);
 
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         user.RefreshToken = newRefreshToken;
+
         await _userManager.UpdateAsync(user);
 
         return new ObjectResult(new
@@ -154,12 +164,9 @@ public class AuthController : ControllerBase
     [Route("revoke/{username}")]
     public async Task<IActionResult> Revoke(string username)
     {
-        var user = await _userManager.FindByIdAsync(username);
+        var user = await _userManager.FindByNameAsync(username);
 
-        if (user == null)
-        {
-            return BadRequest("Invalid username");
-        }
+        if (user == null) return BadRequest("Invalid user name");
 
         user.RefreshToken = null;
 
